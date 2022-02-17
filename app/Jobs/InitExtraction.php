@@ -14,6 +14,7 @@ use App\Jobs\ExtractData as JobsExtractData;
 use App\Models\Extraction;
 use App\Jobs\ExtractionBase;
 use App\Managers\Extraction\Repository as ManagerRepository;
+use Illuminate\Console\Command;
 
 class InitExtraction extends ExtractionBase implements ShouldQueue
 {
