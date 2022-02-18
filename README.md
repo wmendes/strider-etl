@@ -1,17 +1,26 @@
-# Wlademyr Mendes -Strider Data Engineering Assessment
+# Strider Data Engineering Assessment
 
-  ## Built using laravel and docker
+Hello, my name is Wlademyr and this is my assessment for Strider
 
-  
+## Installation
 
-### Prerequisites
->Docker and Docker Compose
+Run the instalation script. It will install all dependencies and start the docker containers using Laravel Sail
 
-  
+```bash
+sh strider-etl build
+sh strider-etl up
+```
+This will start the docker container managed by Laravel Sail.
+If you want to stop the containers just run:
+```bash
+sh strider-etl down
+```
 
-### Instructions
-> ./run.sh
-> ./vendor/bin/sail artisan etl:initextraction stream
+## Usage
 
-### Phase 2
-> The file containing the queries is placed on base directory. Phase2.sql
+```bash
+import foobar
+
+# run the ETL pipeline for the 'stream' datasource
+sh strider-etl run stream
+```
