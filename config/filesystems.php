@@ -32,7 +32,7 @@ return [
 
         'local' => [
             'driver' => 'local',
-            'root' => storage_path('app/staging'),
+            'root' => storage_path('app/local'),
         ],
 
         'ftp' => [
@@ -40,10 +40,15 @@ return [
             'root' => storage_path('app/ftp'),
         ],        
 
-        'staging' => [
+        'staging-s3' => [
             'driver' => 'local',
-            'root' => storage_path('app/staging'),
+            'root' => storage_path('app/staging-s3'),
         ],        
+
+        'glacier' => [
+            'driver' => 'local',
+            'root' => storage_path('app/glacier'),
+        ],                
 
         'public' => [
             'driver' => 'local',

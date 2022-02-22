@@ -15,6 +15,7 @@ use App\Models\Book;
 use App\Models\Review;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use League\Flysystem\MountManager;
 
 
 class Stream implements Driver {
@@ -28,10 +29,10 @@ class Stream implements Driver {
     }
 
     public function extractData(Extraction $extraction): void {
-        Storage::disk('staging')->makeDirectory("{$this->slug}/{$extraction->uuid}");
+        Storage::disk('staging-s3')->makeDirectory("{$this->slug}/{$extraction->uuid}");
         foreach($this->config['files'] as $file){
             $fileData = Storage::disk('ftp')->get($file);
-            Storage::disk('staging')->put("{$this->slug}/{$extraction->uuid}/{$file}", $fileData);
+            Storage::disk('staging-s3')->put("{$this->slug}/{$extraction->uuid}/{$file}", $fileData);
         }
     }
 
@@ -40,11 +41,11 @@ class Stream implements Driver {
     }
 
     public function loadData(Extraction $extraction): void {
-        Excel::import(new UsersImport,"{$this->slug}/{$extraction->uuid}/users.csv", 'staging');
-        Excel::import(new MoviesImport,"{$this->slug}/{$extraction->uuid}/movies.csv", 'staging');
-        Excel::import(new StreamsImport,"{$this->slug}/{$extraction->uuid}/streams.csv", 'staging');
+        Excel::import(new UsersImport,"{$this->slug}/{$extraction->uuid}/users.csv", 'staging-s3');
+        Excel::import(new MoviesImport,"{$this->slug}/{$extraction->uuid}/movies.csv", 'staging-s3');
+        Excel::import(new StreamsImport,"{$this->slug}/{$extraction->uuid}/streams.csv", 'staging-s3');
         
-        $authors = Storage::disk('staging')->get("{$this->slug}/{$extraction->uuid}/authors.json");
+        $authors = Storage::disk('staging-s3')->get("{$this->slug}/{$extraction->uuid}/authors.json");
         $authorsArray = New Collection(json_decode($authors, true));
         
         $authorsArray = $authorsArray->map(function($item, $key) {
@@ -56,13 +57,13 @@ class Stream implements Driver {
         Author::upsert($authorsArray->toArray(), ['name'], ['birth_date', 'died_at', 'nationality']);
 
 
-        $books = Storage::disk('staging')->get("{$this->slug}/{$extraction->uuid}/books.json");
+        $books = Storage::disk('staging-s3')->get("{$this->slug}/{$extraction->uuid}/books.json");
         $booksArray = json_decode($books, true);
 
         Book::upsert($booksArray, ['name'], ['pages', 'author', 'publisher']);
 
 
-        $reviews = Storage::disk('staging')->get("{$this->slug}/{$extraction->uuid}/reviews.json");
+        $reviews = Storage::disk('staging-s3')->get("{$this->slug}/{$extraction->uuid}/reviews.json");
         $reviewsArray = json_decode($reviews, true);
 
         Review::upsert($reviewsArray, ['movie', 'book'], ['rate', 'resume']);
@@ -72,5 +73,18 @@ class Stream implements Driver {
 
     public function clearData(Extraction $extraction): void {
 
+        $mountManager = new MountManager([
+            'staging-s3' => Storage::disk('staging-s3')->getDriver(),
+            'glacier' => Storage::disk('glacier')->getDriver(),
+        ]);
+
+        $files = Storage::disk('staging-s3')->files("{$this->slug}/{$extraction->uuid}");
+        
+        foreach ($files as $file) {
+            $mountManager->move("staging-s3://{$file}", "glacier://{$file}");
+        }
+
+        Storage::disk('staging-s3')->deleteDirectory("{$this->slug}/{$extraction->uuid}");
+        
     }
 }

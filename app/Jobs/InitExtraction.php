@@ -3,18 +3,17 @@
 namespace App\Jobs;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
-use App\Jobs\ExtractData as JobsExtractData;
-use App\Models\Extraction;
+use App\Jobs\ExtractData;
+use App\Jobs\LoadData;
+use App\Jobs\TransformData;
+use App\Jobs\ClearData;
 use App\Jobs\ExtractionBase;
 use App\Managers\Extraction\Repository as ManagerRepository;
-use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Bus;
 
 class InitExtraction extends ExtractionBase implements ShouldQueue
 {
@@ -30,6 +29,14 @@ class InitExtraction extends ExtractionBase implements ShouldQueue
 
     public function handle()
     {
-        $this->dispatchNext(JobsExtractData::class, [$this->manager, $this->extraction]);
+
+        Bus::chain([
+            new ExtractData,
+            new LoadData,
+            new TransformData,
+            new ClearData
+        ])->dispatch([$this->manager, $this->extraction]);
+
+        // $this->dispatchNext(JobsExtractData::class, [$this->manager, $this->extraction]);
     }
 }

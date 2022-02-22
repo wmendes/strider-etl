@@ -17,7 +17,7 @@ case $1 in
     ;;
 
     up)
-        ./vendor/bin/sail up -d
+        ./vendor/bin/sail up -d && ./vendor/bin/sail artisan queue:work
     exit 1
     ;;
 
@@ -30,5 +30,10 @@ case $1 in
         ./vendor/bin/sail artisan etl:initextraction $2
     exit 1
     ;;
+
+    worker)
+        ./vendor/bin/sail artisan queue:listen
+    exit 1
+    ;;    
 
 esac
