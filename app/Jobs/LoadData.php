@@ -12,6 +12,9 @@ use App\Models\Extraction;
 use \App\Jobs\TransformData as JobsTransformData;
 use App\Managers\Extraction\Repository as ManagerRepository;
 use App\Jobs\ExtractionBase;
+use Illuminate\Bus\Batch;
+use Illuminate\Support\Facades\Bus;
+use Throwable;
 
 class LoadData extends ExtractionBase implements ShouldQueue
 {
@@ -32,7 +35,14 @@ class LoadData extends ExtractionBase implements ShouldQueue
      */
     public function handle()
     {
-        $this->manager->loadData($this->extraction);
-        $this->dispatchNext(JobsTransformData::class, [$this->manager, $this->extraction]);
+        $jobClass = JobsTransformData::class;
+        $manager = $this->manager;
+        $extraction = $this->extraction;
+        
+        $this->manager->loadData($this->extraction)
+        ->finally(function (Batch $batch) use ($jobClass, $manager, $extraction) {
+            $jobClass::dispatch($manager, $extraction);
+        })->name('Create Items')->dispatch();
     }
+
 }

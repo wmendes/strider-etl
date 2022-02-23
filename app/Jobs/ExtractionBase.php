@@ -76,5 +76,4 @@ class ExtractionBase
             $this->extraction->save();
         }
     }
-
 }
